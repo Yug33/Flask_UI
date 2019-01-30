@@ -12,6 +12,7 @@ import nltk  # Natural language processing tool-kit
 from sklearn.feature_extraction.text import CountVectorizer  # For Bag of words
 
 
+
 def classify(ranked_text):
     news_df = pd.read_csv("uci-news-aggregator.csv", sep=",")
     news_df['CATEGORY'] = news_df.CATEGORY.map({'b': 1, 't': 2, 'e': 3, 'm': 4})

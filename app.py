@@ -10,10 +10,12 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 @app.route('/output')
-def output(filename):
-    # from Text_processing import TextRankProject as tp
-    # tp.generate_summarized_op(file_name)
-    return "fn "+filename
+def output():
+    # filename = request.args[file]
+    filename = request.args.get('filename')
+    from Text_processing import TextRankProject as tp
+    tp.generate_summarized_op(filename)
+
 
 
 @app.route('/')
@@ -27,7 +29,5 @@ def index():
         file = request.files['file']
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        # from Text_processing import TextRankProject as tp
-        # tp.generate_summarized_op(file.filename)
-        return redirect(url_for('output', filename=file.filename))
+        return redirect(url_for('output',filename=file.filename))
     return redirect("output")
