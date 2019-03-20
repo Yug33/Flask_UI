@@ -1,20 +1,19 @@
 import warnings
 
-from numba import prange
-
 warnings.filterwarnings("ignore")  # Ignoring unnecessory warnings
-import sys
 import string
-import pickle
 import numpy as np  # for large and multi-dimensional arrays
 import pandas as pd  # for data manipulation and analysis
-import nltk  # Natural language processing tool-kit
 from sklearn.feature_extraction.text import CountVectorizer  # For Bag of words
 
 
-
 def classify(ranked_text):
-    news_df = pd.read_csv("uci-news-aggregator.csv", sep=",")
+    """
+    Used for the classification of the sentences
+    :parameter ranked_text (list)
+    """
+    # print(ranked_text)
+    news_df = pd.read_csv("input/uci-news-aggregator.csv", sep=",")
     news_df['CATEGORY'] = news_df.CATEGORY.map({'b': 1, 't': 2, 'e': 3, 'm': 4})
     news_df['TITLE'] = news_df.TITLE.map(
         lambda x: x.lower().translate(str.maketrans('', '', string.punctuation))
@@ -32,28 +31,36 @@ def classify(ranked_text):
     training_data = count_vector.fit_transform(X_train)
     testing_data = count_vector.transform(ranked_text)
 
-    from sklearn.naive_bayes import MultinomialNB
-    naive_bayes = MultinomialNB()
-    naive_bayes.fit(training_data, y_train)
-    filename = 'News_finalized_model.sav'
-    pickle.dump(naive_bayes, open(filename, 'wb'))
-    filename = 'News_finalized_model.sav'
-    model = pickle.load(open(filename, 'rb'))
+    from Text_processing import Classifications
 
-    predictions_nb = model.predict(testing_data)
-    print(predictions_nb)
+    result = Classifications.naive_bayes(training_data, y_train, testing_data)
+    return result
 
 
 # function to read CSV dataset
-def read_csv(filename):
-    data_path = filename
-    data_threads = pd.read_csv(data_path, encoding='latin-1')
+def read_csv(file_path):
+    """
+    This Function will read the CSV input file
+    :param str file_path : The path to the input file
+    :rtype dataframe : return the dataframe of the pandas library
+    :return : return the pandas dataframe of the input file
+
+    """
+    data_threads = pd.read_csv(file_path, encoding='latin-1')
     return data_threads
 
 
 # Function to remove duplicates
 def remove_duplicate(data_threads):
-    final_data = data_threads.drop_duplicates(subset={"thread_number", "text"})
+    """
+        This Function will remove duplicates of the dataframe.
+        :param dataframe data_threads: pandas dataframe having columns thread_number and text
+        :rtype dataframe : return the dataframe of the pandas library
+        :return : return the pandas dataframe after removed the duplicates
+
+    """
+
+    final_data = data_threads.drop_duplicates(subset={"thread_number", "text", "retweets", "likes", "replies"})
     return final_data
 
 
@@ -64,9 +71,17 @@ def get_needed_data(final_data):
 
 
 def unwanted_text_removal(final_text):
+    """
+           This Function will remove duplicates of the dataframe.
+           :param final_text : pandas dataframe having columns thread_number and text
+           :rtype dataframe : return the dataframe of the pandas library
+           :return : return the pandas dataframe after removed HTML tags, Removing Punctuations
+       """
     import re
     temp = []
+    t=0
     for sentence in final_text:
+        t=t+1
         sentence = re.sub(r'\w+:\/{2}[\d\w-]+(\.[\d\w-]+)*(?:(?:\/[^\s/]*))*', '', sentence)
         sentence = sentence.lower()
         cleanr = re.compile('<.*?>')
@@ -80,6 +95,11 @@ def unwanted_text_removal(final_text):
 
 
 def combine_words_to_sentence(final_text):
+    """
+    make sentences from words
+    :param final_text: list of words
+    :return: merged sentences
+    """
     temp = []
     for row in final_text:
         sequ = ''
@@ -90,12 +110,25 @@ def combine_words_to_sentence(final_text):
 
 
 def vect_conversion(final_text):
+    """
+    Convert the Text into the Vectorized form using Counter Vector max_features=5000
+    :param final_text: list of words or sentences
+    :return: vectorized form of the text
+    """
     count_vect = CountVectorizer(max_features=5000)
     vect_data = count_vect.fit_transform(final_text)
     return vect_data
 
 
-def summerized_text(final_text, vect_data):
+def text_rank(final_text, vect_data, no_of_line=5):
+    """
+    Implemented Text Rank algorithm, does the ranking of the statements as given input
+    :rtype: dataframe
+    :param final_text: preprocessed text data
+    :param vect_data: vectored data of the final_text
+    :param no_of_line: no of summarized line, default value is 5
+    :return: ranked sentences as per text rank algorithm
+    """
     sim_mat = np.zeros([len(final_text), len(final_text)])
     from sklearn.metrics.pairwise import cosine_similarity
     for i in range(len(final_text)):
@@ -110,34 +143,50 @@ def summerized_text(final_text, vect_data):
 
     ranked_sentences = sorted(((scores[i], s) for i, s in enumerate(final_text)), reverse=True)
 
-    no_of_line = 5
-    # print(final)
     return ranked_sentences[:no_of_line]
 
 
 # summarize all complete thread
-def summarization(text):
+def summarization(text,No_of_sentences=5):
+    """
+    takes the dataframe and return top N sentences (Summarized Text)
+    :param text:  pandas dataframe having columns thread_number and text
+    :return: N ranked sentences
+    """
     final_text = unwanted_text_removal(text)
     final_text = combine_words_to_sentence(final_text)
     vect_data = vect_conversion(final_text)
-    summarized_data = summerized_text(final_text, vect_data)
+    summarized_data = text_rank(final_text, vect_data)
     ranked_text = []
-    for i in range(0, 5):
+
+    print(summarized_data)
+
+    for i in range(0, No_of_sentences):
         ranked_text.append(summarized_data[i][1])
-    classify(ranked_text)
-    # print(summarized_data)
+
+    return ranked_text
 
 
-# calling of functions
-def generate_summarized_op(filename):
-    data_thread = read_csv(filename)
-    data = remove_duplicate(data_thread)
-    thread_number, text = get_needed_data(data)
+def text_rank_output(FilePath):
+    """
+    Need specific type of dataset which contains
+
+    Thread_number - No of that conversation
+
+    Text - Conversation of that Thread
+
+    :param str FilePath: path of the input File
+    :return:
+    """
+    data_thread = read_csv(FilePath)
+    # data = remove_duplicate(data_thread)
+    thread_number, text = get_needed_data(data_thread)
 
     count = 0
     g_count = 0
     redundent = thread_number[0]
     one_complete_thred = []
+
     for thread_iterator in thread_number:
         if thread_iterator == redundent:
             one_complete_thred.insert(count, text[g_count])
@@ -146,7 +195,9 @@ def generate_summarized_op(filename):
 
         else:
             # print(one_complete_thred)
-            summarization(one_complete_thred)
+            top_senteces=summarization(one_complete_thred)
+            context = classify(top_senteces)
+            return top_senteces,context
             one_complete_thred.clear()
             count = 0
             one_complete_thred.insert(count, text[g_count])
