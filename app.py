@@ -39,7 +39,6 @@ def handle(filename):
             g_count += 1
             redundent = thread_iterator
 
-
 @app.route('/output')
 def output():
     filename = request.args.get('filename')
@@ -49,8 +48,7 @@ def output():
 
     return render_template('sentences.html', len=len(sentences), sentences=sentences, context=context)
 
-# --------------------------------------------------------------
-
+    # --------------------------------------------------------------
 
 
 @app.route('/')
