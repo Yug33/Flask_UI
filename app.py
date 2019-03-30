@@ -2,8 +2,8 @@ import os
 from flask import Flask, request, redirect, url_for, render_template
 from werkzeug import secure_filename
 import pandas as pd
-import Text_processing as tp
-from Text_processing import TextRankProject as tp
+import Kratos as tp
+from Kratos import TextRankProject as tp
 uploaded_file_name = ""
 UPLOAD_FOLDER = '/pycharm project/flask_try/'
 ALLOWED_EXTENSIONS = set(['csv'])
@@ -19,6 +19,7 @@ def handle(filename):
     count = 0
     g_count = 0
     redundent = thread_number[0]
+
     one_complete_thred = []
 
     for thread_iterator in thread_number:
@@ -44,6 +45,7 @@ def output():
     filename = request.args.get('filename')
 
     sentences, context = tp.text_rank_output(filename)
+
     # --------------------------------------------------------------
 
     return render_template('sentences.html', len=len(sentences), sentences=sentences, context=context)
