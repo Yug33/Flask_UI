@@ -14,7 +14,6 @@ def read_csv(file_path):
     :param str file_path : The path to the input file
     :rtype dataframe : return the dataframe of the pandas library
     :return : return the pandas dataframe of the input file
-
     """
     data_threads = pd.read_csv(file_path, encoding='latin-1')
     return data_threads
@@ -36,7 +35,7 @@ def remove_duplicate(data_threads):
 
 def get_needed_data(final_data):
     final_thread_number = final_data['thread_number']
-    final_text = final_data['text']
+    final_text = final_data['TITLE']
     return final_thread_number, final_text
 
 
@@ -151,7 +150,6 @@ def text_rank_output(FilePath):
     data_thread = read_csv(FilePath)
     # data = remove_duplicate(data_thread)
     thread_number, text = get_needed_data(data_thread)
-
     count = 0
     g_count = 0
     redundent = thread_number[0]
@@ -165,15 +163,23 @@ def text_rank_output(FilePath):
 
         else:
             # print(one_complete_thred)
-            top_senteces=summarization(one_complete_thred)
-            context = classify(top_senteces)
-            with open('output.csv', 'w') as f:
-                f.write("text, context\n")
-                for i in range(4):
-                    line = top_senteces[i] + ", " + to_str(context[i]) + "\n"
-                    f.write(line)
+            print("going to summarize")
+            ratio_of_summary = (len(one_complete_thred) * 15) / 100
+            top_senteces=summarization(one_complete_thred,int(ratio_of_summary))
+            from Kratos import NN_Classification,mapping,Classifications
+            # context = NN_Classification.get_context(top_senteces)
+            context = Classifications.get_context("Kratos/stored_model/naive_bayes.pkl",top_senteces)
+            print("HEllo")
+            # with open('summary.csv', 'w') as f:
+            #     f.write("text, context\n")
+            #     for i in range(4):
+            #         line = top_senteces[i] + ", " + to_str(context[i]) + "\n"
+            #         f.write(line)
+            print(top_senteces)
+            print(context)
+            # context = mapping.map(context)
 
-            return top_senteces,context
+            return top_senteces,mapping.map(context)
             one_complete_thred.clear()
             count = 0
             one_complete_thred.insert(count, text[g_count])

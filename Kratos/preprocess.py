@@ -16,6 +16,10 @@ from gensim.models import Word2Vec                                   #For Word2V
 import pandas as pd
 
 def pre_precess_text(data_sel):
+    """
+    :param data_sel: selected data from the CSV as pandas dataframe
+    :return: no return store output.csv file which is preprocessed
+    """
     #removing duplicates
     # final_data = data_sel.drop_duplicates(subset={"TITLE","CATEGORY"})
     stop = set(stopwords.words('english'))
@@ -57,8 +61,3 @@ def pre_precess_text(data_sel):
         print(len(category))
         csv_input['CATEGORY'] = category
         csv_input.to_csv('output.csv')
-
-        data_sel=pd.read_csv('output.csv')
-
-        print(final_data)
-        # final_data.to_csv('output.csv')
